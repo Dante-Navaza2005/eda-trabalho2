@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/dantegates/Documents/GitHub/eda-trabalho2/main'
+relocations:     []
+...
