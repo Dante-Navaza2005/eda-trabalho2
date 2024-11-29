@@ -406,6 +406,9 @@ int main() {
     inserirChave(&raiz, 10);
     imprimirArvore(raiz, 0);
     printf("\n\n");
+    inserirChave(&raiz, 20);
+    imprimirArvore(raiz, 0);
+    printf("\n\n");
     inserirChave(&raiz, 5);
     imprimirArvore(raiz, 0);
     printf("\n\n");
