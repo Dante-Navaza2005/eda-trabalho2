@@ -435,7 +435,7 @@ int main() {
     
     
     excluirChave(&raiz, 50);
-    printf("Árvore B+ após exclusão da chave 25:\n");
+    printf("Árvore B+ após exclusão da chave 50:\n");
     imprimirArvore(raiz, 0);
     
 
