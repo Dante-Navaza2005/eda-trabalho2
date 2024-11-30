@@ -9,7 +9,9 @@ typedef struct NoBPlus {
     struct NoBPlus *ptr3;
     struct NoBPlus *pai;
     int folha; // 1 se for folha, 0 se for nó interno
+    int ref_count; // Contagem de referências
 } NoBPlus;
+
 
 // Protótipos das funções
 NoBPlus* criarNo(int folha);
@@ -24,21 +26,26 @@ void inserirEmNoInterno(NoBPlus** raiz, NoBPlus* no, int chave, NoBPlus* filhoDi
 void cisaoNoInterno(NoBPlus** raiz, NoBPlus* no, int chave, NoBPlus* filhoDireita);
 int indiceFilho(NoBPlus* pai, NoBPlus* filho);
 void concatenarRedistribuir(NoBPlus** raiz, NoBPlus* no);
-void atualizarChaves(NoBPlus* no, int chaveAntiga, int chaveNova);
+void atualizarChaves(NoBPlus* no);
 
 // Função para criar um novo nó
 NoBPlus* criarNo(int folha) {
     NoBPlus* no = (NoBPlus*)malloc(sizeof(NoBPlus));
     no->chave1 = -1;
     no->chave2 = -1;
-    no->ptr1 = NULL;
-    no->ptr2 = NULL;
-    no->ptr3 = NULL;
+    no->ptr1 = no->ptr2 = no->ptr3 = NULL;
     no->pai = NULL;
     no->folha = folha;
+    no->ref_count = 1; // Inicializa com uma referência
     return no;
 }
 
+void adicionarReferencia(NoBPlus* no) {
+    if (no != NULL) {
+        no->ref_count++;
+    }
+}
+ 
 // Função auxiliar para inserir chave em um nó folha
 void inserirEmFolha(NoBPlus* no, int chave) {
     if (no->chave1 == -1) {
@@ -69,7 +76,7 @@ void cisaoFolha(NoBPlus** raiz, NoBPlus* no, int chave) {
 
     // Atualiza o nó atual com as menores chaves
     no->chave1 = chaves[0];
-    no->chave2 = -1;
+    no->chave2 = -1; // Nó folha tem capacidade 2
 
     // Novo nó folha
     NoBPlus* novoNo = criarNo(1);
@@ -139,7 +146,6 @@ void cisaoNoInterno(NoBPlus** raiz, NoBPlus* no, int chave, NoBPlus* filhoDireit
     novoNo->chave2 = -1;
     novoNo->ptr1 = filhos[2];
     novoNo->ptr2 = filhos[3];
-    novoNo->ptr3 = NULL;
     novoNo->ptr1->pai = novoNo;
     novoNo->ptr2->pai = novoNo;
 
@@ -148,7 +154,6 @@ void cisaoNoInterno(NoBPlus** raiz, NoBPlus* no, int chave, NoBPlus* filhoDireit
     no->chave2 = -1;
     no->ptr1 = filhos[0];
     no->ptr2 = filhos[1];
-    no->ptr3 = NULL;
     no->ptr1->pai = no;
     no->ptr2->pai = no;
 
@@ -222,16 +227,33 @@ int indiceFilho(NoBPlus* pai, NoBPlus* filho) {
         return 2;
 }
 
-// Função para atualizar as chaves nos nós internos
-void atualizarChaves(NoBPlus* no, int chaveAntiga, int chaveNova) {
-    if (no == NULL)
+// Função para atualizar as chaves mínimas nos nós internos
+void atualizarChaves(NoBPlus* no) {
+    if (no == NULL || no->folha)
         return;
-    if (no->chave1 == chaveAntiga) {
-        no->chave1 = chaveNova;
-    } else if (no->chave2 == chaveAntiga) {
-        no->chave2 = chaveNova;
+
+    // Atualiza chave1
+    if (no->ptr1 != NULL) {
+        if (no->ptr1->folha)
+            no->chave1 = no->ptr2->chave1;
+        else
+            no->chave1 = no->ptr2->chave1;
     }
-    atualizarChaves(no->pai, chaveAntiga, chaveNova);
+
+    // Atualiza chave2
+    if (no->ptr3 != NULL) {
+        if (no->ptr2 != NULL) {
+            if (no->ptr2->folha)
+                no->chave2 = no->ptr3->chave1;
+            else
+                no->chave2 = no->ptr3->chave1;
+        }
+    } else {
+        no->chave2 = -1;
+    }
+
+    // Recursivamente atualiza o pai
+    atualizarChaves(no->pai);
 }
 
 // Implementação da função excluirChave
@@ -252,9 +274,6 @@ void excluirChave(NoBPlus** raiz, int chave) {
     if (no->chave1 == chave) {
         no->chave1 = no->chave2;
         no->chave2 = -1;
-
-        // Atualiza os nós internos se a chave removida era a mínima
-        atualizarChaves(no->pai, chave, no->chave1);
     } else if (no->chave2 == chave) {
         no->chave2 = -1;
     } else {
@@ -262,9 +281,11 @@ void excluirChave(NoBPlus** raiz, int chave) {
         return;
     }
 
-    // Se o nó ainda tem uma chave, não precisa ajustar
-    if (no->chave1 != -1)
+    // Se o nó ainda tem uma chave, atualiza os nós internos
+    if (no->chave1 != -1) {
+        atualizarChaves(no->pai);
         return;
+    }
 
     // Ajusta a árvore se necessário
     concatenarRedistribuir(raiz, no);
@@ -303,20 +324,14 @@ void concatenarRedistribuir(NoBPlus** raiz, NoBPlus* no) {
             no->chave1 = irmao->chave1;
             irmao->chave1 = irmao->chave2;
             irmao->chave2 = -1;
-            // Atualiza chave no pai
-            if (indice == 0)
-                pai->chave1 = irmao->chave1;
-            else
-                pai->chave2 = irmao->chave1;
+            // Atualiza as chaves no pai
+            atualizarChaves(pai);
         } else {
             // Pega emprestado do irmão esquerdo
             no->chave1 = irmao->chave2;
             irmao->chave2 = -1;
-            // Atualiza chave no pai
-            if (indiceIrmao == 0)
-                pai->chave1 = no->chave1;
-            else
-                pai->chave2 = no->chave1;
+            // Atualiza as chaves no pai
+            atualizarChaves(pai);
         }
     } else {
         // Concatena com o irmão
@@ -355,6 +370,8 @@ void concatenarRedistribuir(NoBPlus** raiz, NoBPlus* no) {
                     pai->chave2 = -1;
                 }
             }
+            // Atualiza as chaves no pai
+            atualizarChaves(pai);
         }
 
         // Se o pai ficou sem chaves, ajustar
@@ -386,13 +403,20 @@ void imprimirArvore(NoBPlus* no, int nivel) {
 
 // Função para liberar a árvore
 void liberarArvore(NoBPlus* no) {
-    if (no == NULL)
-        return;
-    if (!no->folha) {
-        liberarArvore(no->ptr1);
-        liberarArvore(no->ptr2);
-        liberarArvore(no->ptr3);
+    if (no == NULL) return;
+
+    // Se o nó for folha e tiver referências, diminua a contagem
+    if (no->ref_count > 0) {
+        no->ref_count--;
+        return; // Não libera ainda, pois ainda há referências ao nó
     }
+
+    // Liberar filhos (recursão) antes de liberar o próprio nó
+    liberarArvore(no->ptr1);
+    liberarArvore(no->ptr2);
+    liberarArvore(no->ptr3);
+
+    // Liberar o nó depois de seus filhos
     free(no);
 }
 
