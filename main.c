@@ -27,7 +27,8 @@ void concatenarRedistribuir(NoBPlus** raiz, NoBPlus* no);
 void atualizarChaves(NoBPlus* no, int chaveAntiga, int chaveNova);
 
 // Função para criar um novo nó
-NoBPlus* criarNo(int folha) {
+NoBPlus* criarNo(int folha) 
+{
     NoBPlus* no = (NoBPlus*)malloc(sizeof(NoBPlus));
     no->chave1 = -1;
     no->chave2 = -1;
@@ -40,14 +41,21 @@ NoBPlus* criarNo(int folha) {
 }
 
 // Função auxiliar para inserir chave em um nó folha
-void inserirEmFolha(NoBPlus* no, int chave) {
-    if (no->chave1 == -1) {
+void inserirEmFolha(NoBPlus* no, int chave) 
+{
+    if (no->chave1 == -1) // insere na primeira chave vazia
+    {
         no->chave1 = chave;
-    } else if (no->chave2 == -1) {
-        if (chave < no->chave1) {
+    } 
+    else if (no->chave2 == -1) 
+    {
+        if (chave < no->chave1)  // move a chave 1 para a direita e bota a chave nova
+        {
             no->chave2 = no->chave1;
             no->chave1 = chave;
-        } else {
+        } 
+        else 
+        {
             no->chave2 = chave;
         }
     }
