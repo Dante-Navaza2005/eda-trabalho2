@@ -12,7 +12,6 @@ typedef struct NoBPlus {
     int ref_count; // Contagem de referências
 } NoBPlus;
 
-
 // Protótipos das funções
 NoBPlus* criarNo(int folha);
 void inserirChave(NoBPlus** raiz, int chave);
@@ -49,7 +48,7 @@ void adicionarReferencia(NoBPlus* no) {
         no->ref_count++;
     }
 }
- 
+
 // Função auxiliar para inserir chave em um nó folha
 void inserirEmFolha(NoBPlus* no, int chave) {
     if (no->chave1 == -1) {
@@ -64,7 +63,25 @@ void inserirEmFolha(NoBPlus* no, int chave) {
     }
 }
 
-// Função auxiliar para cisão de nós folhas
+void inserirEmNoInterno(NoBPlus** raiz, NoBPlus* no, int chave, NoBPlus* filhoDireita) {
+    if (no->chave2 == -1) {
+        // Tem espaço no nó interno
+        if (chave < no->chave1) {
+            no->chave2 = no->chave1;
+            no->chave1 = chave;
+            no->ptr3 = no->ptr2;
+            no->ptr2 = filhoDireita;
+        } else {
+            no->chave2 = chave;
+            no->ptr3 = filhoDireita;
+        }
+        filhoDireita->pai = no;
+    } else {
+        // Nó interno cheio, precisa cisão
+        cisaoNoInterno(raiz, no, chave, filhoDireita);
+    }
+}
+
 void cisaoFolha(NoBPlus** raiz, NoBPlus* no, int chave) {
     int chaves[3] = { no->chave1, no->chave2, chave };
     // Ordena as chaves
@@ -78,23 +95,23 @@ void cisaoFolha(NoBPlus** raiz, NoBPlus* no, int chave) {
         }
     }
 
-    // Atualiza o nó atual com as menores chaves
+    // Atualiza o nó atual com as duas primeiras chaves
     no->chave1 = chaves[0];
-    no->chave2 = -1; // Nó folha tem capacidade 2
+    no->chave2 = -1;
 
-    // Novo nó folha
+    // Cria um novo nó folha
     NoBPlus* novoNo = criarNo(1);
     novoNo->chave1 = chaves[1];
     novoNo->chave2 = chaves[2];
     novoNo->pai = no->pai;
 
-    // Sobe a menor chave do novo nó para o nó pai
-    int chaveMeio = novoNo->chave1;
+    // Sobe a chave para o pai
+    int chaveSubir = novoNo->chave1;
 
-    // Se o nó atual não tiver pai, cria um novo
     if (no->pai == NULL) {
+        // Cria novo nó raiz
         NoBPlus* novoPai = criarNo(0);
-        novoPai->chave1 = chaveMeio;
+        novoPai->chave1 = chaveSubir;
         novoPai->ptr1 = no;
         novoPai->ptr2 = novoNo;
         no->pai = novoPai;
@@ -102,35 +119,15 @@ void cisaoFolha(NoBPlus** raiz, NoBPlus* no, int chave) {
         *raiz = novoPai;
     } else {
         // Insere a chave no nó pai
-        inserirEmNoInterno(raiz, no->pai, chaveMeio, novoNo);
+        inserirEmNoInterno(raiz, no->pai, chaveSubir, novoNo);
     }
 }
 
-// Função auxiliar para inserir chave em um nó interno
-void inserirEmNoInterno(NoBPlus** raiz, NoBPlus* no, int chave, NoBPlus* filhoDireita) {
-    if (no->chave2 == -1) {
-        if (chave < no->chave1) {
-            no->chave2 = no->chave1;
-            no->chave1 = chave;
-            no->ptr3 = no->ptr2;
-            no->ptr2 = filhoDireita;
-        } else {
-            no->chave2 = chave;
-            no->ptr3 = filhoDireita;
-        }
-        filhoDireita->pai = no;
-    } else {
-        // Nó interno cheio, precisa de cisão
-        cisaoNoInterno(raiz, no, chave, filhoDireita);
-    }
-}
-
-// Função auxiliar para cisão de nós internos
 void cisaoNoInterno(NoBPlus** raiz, NoBPlus* no, int chave, NoBPlus* filhoDireita) {
     int chaves[3] = { no->chave1, no->chave2, chave };
     NoBPlus* filhos[4] = { no->ptr1, no->ptr2, no->ptr3, filhoDireita };
 
-    // Ordena as chaves e ajusta os filhos
+    // Ordena as chaves e ajusta os filhos associados
     for (int i = 0; i < 2; i++) {
         for (int j = i + 1; j < 3; j++) {
             if (chaves[i] > chaves[j]) {
@@ -144,50 +141,57 @@ void cisaoNoInterno(NoBPlus** raiz, NoBPlus* no, int chave, NoBPlus* filhoDireit
         }
     }
 
-    // Novo nó que será o irmão à direita
-    NoBPlus* novoNo = criarNo(0);
-    novoNo->chave1 = chaves[2];
-    novoNo->chave2 = -1;
-    novoNo->ptr1 = filhos[2];
-    novoNo->ptr2 = filhos[3];
-    novoNo->ptr1->pai = novoNo;
-    novoNo->ptr2->pai = novoNo;
+    // Chave do meio que irá subir para o pai
+    int chaveMeio = chaves[1];
 
-    // Atualiza o nó atual
+    // Cria novo nó à direita
+    NoBPlus* novoNoDireita = criarNo(0);
+    novoNoDireita->chave1 = chaves[2];
+    novoNoDireita->chave2 = -1;
+    novoNoDireita->ptr1 = filhos[2];
+    novoNoDireita->ptr2 = filhos[3];
+    novoNoDireita->ptr3 = NULL;
+
+    // Atualiza os pais dos filhos do novo nó direito
+    if (novoNoDireita->ptr1) novoNoDireita->ptr1->pai = novoNoDireita;
+    if (novoNoDireita->ptr2) novoNoDireita->ptr2->pai = novoNoDireita;
+
+    // Atualiza o nó atual para ser o nó esquerdo
     no->chave1 = chaves[0];
     no->chave2 = -1;
     no->ptr1 = filhos[0];
     no->ptr2 = filhos[1];
-    no->ptr1->pai = no;
-    no->ptr2->pai = no;
+    no->ptr3 = NULL;
 
-    // Sobe a chave do meio
-    int chaveMeio = chaves[1];
+    // Atualiza os pais dos filhos do nó esquerdo
+    if (no->ptr1) no->ptr1->pai = no;
+    if (no->ptr2) no->ptr2->pai = no;
 
-    // Ajusta os apontadores pai
-    novoNo->pai = no->pai;
+    // Ajusta o pai
+    novoNoDireita->pai = no->pai;
 
-    // Se o nó atual não tiver pai, cria um novo
     if (no->pai == NULL) {
-        NoBPlus* novoPai = criarNo(0);
-        novoPai->chave1 = chaveMeio;
-        novoPai->ptr1 = no;
-        novoPai->ptr2 = novoNo;
-        no->pai = novoPai;
-        novoNo->pai = novoPai;
-        *raiz = novoPai;
+        // Cria um novo nó raiz
+        NoBPlus* novaRaiz = criarNo(0);
+        novaRaiz->chave1 = chaveMeio;
+        novaRaiz->chave2 = -1;
+        novaRaiz->ptr1 = no;
+        novaRaiz->ptr2 = novoNoDireita;
+        novaRaiz->ptr3 = NULL;
+        no->pai = novaRaiz;
+        novoNoDireita->pai = novaRaiz;
+        *raiz = novaRaiz;
     } else {
-        // Insere a chave no nó pai
-        inserirEmNoInterno(raiz, no->pai, chaveMeio, novoNo);
+        // Insere a chave do meio no nó pai
+        inserirEmNoInterno(raiz, no->pai, chaveMeio, novoNoDireita);
     }
 }
 
-// Implementação da função inserirChave
 void inserirChave(NoBPlus** raiz, int chave) {
     NoBPlus* no = *raiz;
     // Percorre a árvore até a folha apropriada
     while (!no->folha) {
-        if (chave < no->chave1 || no->chave1 == -1)
+        if (chave < no->chave1)
             no = no->ptr1;
         else if (no->chave2 == -1 || chave < no->chave2)
             no = no->ptr2;
@@ -203,7 +207,6 @@ void inserirChave(NoBPlus** raiz, int chave) {
     }
 }
 
-// Função para buscar uma chave na árvore B+
 NoBPlus* buscarChave(NoBPlus* no, int chave) {
     if (no == NULL)
         return NULL;
@@ -221,7 +224,6 @@ NoBPlus* buscarChave(NoBPlus* no, int chave) {
         return buscarChave(no->ptr3, chave);
 }
 
-// Função para encontrar o índice do filho no pai
 int indiceFilho(NoBPlus* pai, NoBPlus* filho) {
     if (pai->ptr1 == filho)
         return 0;
@@ -231,33 +233,30 @@ int indiceFilho(NoBPlus* pai, NoBPlus* filho) {
         return 2;
 }
 
-// Função para atualizar as chaves mínimas nos nós internos
+int encontrarMenorChave(NoBPlus* no) {
+    while (!no->folha) {
+        no = no->ptr1;
+    }
+    return no->chave1;
+}
+
 void atualizarChaves(NoBPlus* no) {
     if (no == NULL || no->folha)
         return;
 
-    // Atualiza chave1
-    if (no->ptr1 != NULL) {
-        if (no->ptr1->folha)
-            no->chave1 = no->ptr2->chave1;
-        else
-            no->chave1 = no->ptr2->chave1;
+    // Atualiza chave1 para refletir a menor chave do ptr2
+    if (no->ptr2 != NULL) {
+        no->chave1 = encontrarMenorChave(no->ptr2);
+    } else {
+        no->chave1 = -1;
     }
 
-    // Atualiza chave2
+    // Atualiza chave2 para refletir a menor chave do ptr3
     if (no->ptr3 != NULL) {
-        if (no->ptr2 != NULL) {
-            if (no->ptr2->folha)
-                no->chave2 = no->ptr3->chave1;
-            else
-                no->chave2 = no->ptr3->chave1;
-        }
+        no->chave2 = encontrarMenorChave(no->ptr3);
     } else {
         no->chave2 = -1;
     }
-
-    // Recursivamente atualiza o pai
-    atualizarChaves(no->pai);
 }
 
 // Implementação da função excluirChave
@@ -295,7 +294,6 @@ void excluirChave(NoBPlus** raiz, int chave) {
     concatenarRedistribuir(raiz, no);
 }
 
-// Função auxiliar para concatenação ou redistribuição
 void concatenarRedistribuir(NoBPlus** raiz, NoBPlus* no) {
     NoBPlus* pai = no->pai;
     if (pai == NULL) {
