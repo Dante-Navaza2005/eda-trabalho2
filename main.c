@@ -222,16 +222,42 @@ int indiceFilho(NoBPlus* pai, NoBPlus* filho) {
         return 2;
 }
 
-// Função para atualizar as chaves nos nós internos
+
 void atualizarChaves(NoBPlus* no, int chaveAntiga, int chaveNova) {
     if (no == NULL)
         return;
+
+    // Atualiza a chave no nó atual
     if (no->chave1 == chaveAntiga) {
         no->chave1 = chaveNova;
     } else if (no->chave2 == chaveAntiga) {
         no->chave2 = chaveNova;
     }
+
+    // Chama recursivamente para o pai
     atualizarChaves(no->pai, chaveAntiga, chaveNova);
+}
+
+int encontrarMaior(NoBPlus* no) {
+    // Percorre até encontrar o maior valor em uma subárvore
+    while (!no->folha) {
+        if (no->ptr3 != NULL && no->chave2 != -1) {
+            no = no->ptr3;
+        } else {
+            no = no->ptr2;
+        }
+    }
+    return no->chave2 != -1 ? no->chave2 : no->chave1;
+}
+
+int encontrarMenor(NoBPlus* no) {
+    // Percorre até encontrar o menor valor em uma subárvore
+    while (!no->folha) {
+        if (no->ptr1 != NULL) {
+            no = no->ptr1;
+        }
+    }
+    return no->chave1;
 }
 
 void excluirChave(NoBPlus** raiz, int chave) {
@@ -252,8 +278,11 @@ void excluirChave(NoBPlus** raiz, int chave) {
         no->chave1 = no->chave2;
         no->chave2 = -1;
 
-        // Atualiza os nós internos se a chave removida era a mínima
-        atualizarChaves(no->pai, chave, no->chave1);
+        // Se a chave removida era a mínima do nó, atualiza os nós internos
+        if (no->pai != NULL) {
+            int novoValor = encontrarMenor(no->pai->ptr2); // Menor valor do próximo filho
+            atualizarChaves(no->pai, chave, novoValor);
+        }
     } else if (no->chave2 == chave) {
         no->chave2 = -1;
     } else {
@@ -268,7 +297,6 @@ void excluirChave(NoBPlus** raiz, int chave) {
     // Ajusta a árvore se necessário
     concatenarRedistribuir(raiz, no);
 }
-
 
 void concatenarRedistribuir(NoBPlus** raiz, NoBPlus* no) {
     NoBPlus* pai = no->pai;
@@ -339,6 +367,7 @@ void concatenarRedistribuir(NoBPlus** raiz, NoBPlus* no) {
     }
 }
 
+
 // Função para imprimir a árvore completa
 void imprimirArvore(NoBPlus* no, int nivel) {
     if (no == NULL)
@@ -401,8 +430,14 @@ int main() {
 
     // Excluir uma chave
     excluirChave(&raiz, 15);
-    printf("Árvore B+ após exclusão da chave 20:\n");
+    printf("Árvore B+ após exclusão da chave 15:\n");
     imprimirArvore(raiz, 0);
+    
+    
+    excluirChave(&raiz, 50);
+    printf("Árvore B+ após exclusão da chave 25:\n");
+    imprimirArvore(raiz, 0);
+    
 
     // Liberar a árvore
     liberarArvore(raiz);
