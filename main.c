@@ -31,6 +31,10 @@ void atualizarChaves(NoBPlus* no);
 // Função para criar um novo nó
 NoBPlus* criarNo(int folha) {
     NoBPlus* no = (NoBPlus*)malloc(sizeof(NoBPlus));
+    if (no == NULL) {
+        fprintf(stderr, "Erro ao alocar memória para nó.\n");
+        exit(1);  // Ou outro tratamento de erro adequado
+    }
     no->chave1 = -1;
     no->chave2 = -1;
     no->ptr1 = no->ptr2 = no->ptr3 = NULL;
