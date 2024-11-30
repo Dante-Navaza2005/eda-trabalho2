@@ -234,7 +234,6 @@ void atualizarChaves(NoBPlus* no, int chaveAntiga, int chaveNova) {
     atualizarChaves(no->pai, chaveAntiga, chaveNova);
 }
 
-// Implementação da função excluirChave
 void excluirChave(NoBPlus** raiz, int chave) {
     NoBPlus* no = *raiz;
 
@@ -270,101 +269,73 @@ void excluirChave(NoBPlus** raiz, int chave) {
     concatenarRedistribuir(raiz, no);
 }
 
-// Função auxiliar para concatenação ou redistribuição
+
 void concatenarRedistribuir(NoBPlus** raiz, NoBPlus* no) {
     NoBPlus* pai = no->pai;
     if (pai == NULL) {
-        *raiz = NULL;
+        // Se o nó atual é a raiz e ficou vazio, torna a árvore vazia ou reduz a raiz
+        if (no->ptr1) {
+            *raiz = no->ptr1;
+            (*raiz)->pai = NULL;
+        } else {
+            *raiz = NULL;
+        }
         free(no);
         return;
     }
+
     int indice = indiceFilho(pai, no);
-
     NoBPlus* irmao = NULL;
-    int indiceIrmao = -1;
+    int irmaoIndice;
 
-    // Tenta pegar emprestado do irmão esquerdo
-    if (indice > 0) {
+    // Determina o irmão para redistribuição/concatenação
+    if (indice > 0) { // Tenta o irmão esquerdo
         irmao = (indice == 1) ? pai->ptr1 : pai->ptr2;
-        indiceIrmao = indice - 1;
+        irmaoIndice = indice - 1;
     }
-    // Se não conseguir, tenta pegar emprestado do irmão direito
-    if (irmao == NULL || irmao->chave2 == -1) {
+    if (irmao == NULL || irmao->chave2 == -1) { // Tenta o irmão direito
         if (indice < 2 && ((indice == 0 && pai->ptr2 != NULL) || (indice == 1 && pai->ptr3 != NULL))) {
             irmao = (indice == 0) ? pai->ptr2 : pai->ptr3;
-            indiceIrmao = indice + 1;
+            irmaoIndice = indice + 1;
         }
     }
 
-    // Tenta redistribuir
-    if (irmao != NULL && irmao->chave2 != -1) {
-        if (indice < indiceIrmao) {
-            // Pega emprestado do irmão direito
+    if (irmao && irmao->chave2 != -1) {
+        // Redistribuir chaves
+        if (irmaoIndice > indice) { // Irmão direito
             no->chave1 = irmao->chave1;
             irmao->chave1 = irmao->chave2;
             irmao->chave2 = -1;
-            // Atualiza chave no pai
-            if (indice == 0)
-                pai->chave1 = irmao->chave1;
-            else
-                pai->chave2 = irmao->chave1;
-        } else {
-            // Pega emprestado do irmão esquerdo
+            pai->chave1 = irmao->chave1;
+        } else { // Irmão esquerdo
             no->chave1 = irmao->chave2;
             irmao->chave2 = -1;
-            // Atualiza chave no pai
-            if (indiceIrmao == 0)
-                pai->chave1 = no->chave1;
-            else
-                pai->chave2 = no->chave1;
+            pai->chave1 = no->chave1;
         }
     } else {
-        // Concatena com o irmão
-        if (irmao != NULL) {
-            if (indice < indiceIrmao) {
-                // Concatena no com irmão direito
-                if (irmao->chave2 == -1) {
-                    irmao->chave2 = irmao->chave1;
-                    irmao->chave1 = no->chave1;
-                }
-                free(no);
-                if (indice == 0) {
-                    pai->ptr1 = irmao;
-                    pai->ptr2 = pai->ptr3;
-                    pai->ptr3 = NULL;
-                    pai->chave1 = pai->chave2;
-                    pai->chave2 = -1;
-                } else {
-                    pai->ptr2 = pai->ptr3;
-                    pai->ptr3 = NULL;
-                    pai->chave2 = -1;
-                }
-            } else {
-                // Concatena no com irmão esquerdo
-                if (irmao->chave2 == -1) {
-                    irmao->chave2 = no->chave1;
-                }
-                free(no);
-                if (indice == 1) {
-                    pai->ptr2 = pai->ptr3;
-                    pai->ptr3 = NULL;
-                    pai->chave1 = pai->chave2;
-                    pai->chave2 = -1;
-                } else {
-                    pai->ptr3 = NULL;
-                    pai->chave2 = -1;
-                }
+        // Concatenação
+        if (irmao) {
+            if (irmaoIndice > indice) { // Concatenar com o irmão direito
+                irmao->chave2 = irmao->chave1;
+                irmao->chave1 = no->chave1;
+                irmao->ptr2 = no->ptr2; // Ajusta o encadeamento
+            } else { // Concatenar com o irmão esquerdo
+                irmao->chave2 = no->chave1;
+                irmao->ptr3 = no->ptr2;
             }
+            // Ajusta o pai
+            if (pai->chave1 == irmao->chave1) {
+                pai->chave1 = irmao->chave1;
+            } else {
+                pai->chave2 = -1;
+            }
+            free(no);
         }
+    }
 
-        // Se o pai ficou sem chaves, ajustar
-        if (pai->chave1 == -1 && pai->pai == NULL) {
-            *raiz = pai->ptr1;
-            (*raiz)->pai = NULL;
-            free(pai);
-        } else if (pai->chave1 == -1) {
-            concatenarRedistribuir(raiz, pai);
-        }
+    // Se o pai ficar vazio, faz o ajuste necessário
+    if (pai->chave1 == -1) {
+        concatenarRedistribuir(raiz, pai);
     }
 }
 
@@ -458,7 +429,7 @@ int main() {
         printf("Chave %d não encontrada na árvore\n", chaveBusca);
 
     // Excluir uma chave
-    excluirChave(&raiz, 20);
+    excluirChave(&raiz, 15);
     printf("Árvore B+ após exclusão da chave 20:\n");
     imprimirArvore(raiz, 0);
 
