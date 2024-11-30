@@ -24,7 +24,8 @@ void inserirEmNoInterno(NoBPlus** raiz, NoBPlus* no, int chave, NoBPlus* filhoDi
 void cisaoNoInterno(NoBPlus** raiz, NoBPlus* no, int chave, NoBPlus* filhoDireita);
 int indiceFilho(NoBPlus* pai, NoBPlus* filho);
 void concatenarRedistribuir(NoBPlus** raiz, NoBPlus* no);
-void atualizarChaves(NoBPlus* no, int chaveAntiga, int chaveNova);
+void atualizarChaves(NoBPlus* no);
+int encontrarMenor(NoBPlus* no);
 
 // Função para criar um novo nó
 NoBPlus* criarNo(int folha) 
@@ -231,20 +232,32 @@ int indiceFilho(NoBPlus* pai, NoBPlus* filho) {
         return 2;
 }
 
+// Função para encontrar a menor chave em um nó
+int encontrarMenorChave(NoBPlus* no) {
+    while (!no->folha) {
+        no = no->ptr1;
+    }
+    return no->chave1;
+}
 
-void atualizarChaves(NoBPlus* no, int chaveAntiga, int chaveNova) {
-    if (no == NULL)
+// Função para atualizar as chaves de um nó pai
+// Função para atualizar as chaves do pai
+// Função para atualizar as chaves do pai
+void atualizarChaves(NoBPlus* no) {
+    if (no == NULL || no->folha)
         return;
 
-    // Atualiza a chave no nó atual
-    if (no->chave1 == chaveAntiga) {
-        no->chave1 = chaveNova;
-    } else if (no->chave2 == chaveAntiga) {
-        no->chave2 = chaveNova;
+    if (no->ptr2 != NULL) {
+        no->chave1 = encontrarMenor(no->ptr2);
+    } else {
+        no->chave1 = -1;
     }
 
-    // Chama recursivamente para o pai
-    atualizarChaves(no->pai, chaveAntiga, chaveNova);
+    if (no->ptr3 != NULL) {
+        no->chave2 = encontrarMenor(no->ptr3);
+    } else {
+        no->chave2 = -1;
+    }
 }
 
 int encontrarMaior(NoBPlus* no) {
@@ -259,124 +272,147 @@ int encontrarMaior(NoBPlus* no) {
     return no->chave2 != -1 ? no->chave2 : no->chave1;
 }
 
+// Função para encontrar o menor valor em uma subárvore
 int encontrarMenor(NoBPlus* no) {
-    // Percorre até encontrar o menor valor em uma subárvore
     while (!no->folha) {
-        if (no->ptr1 != NULL) {
-            no = no->ptr1;
-        }
+        no = no->ptr1;
     }
     return no->chave1;
 }
 
+
+
+
+// Função de exclusão (modificada para garantir a exclusão de todas as instâncias da chave)
+// Função para excluir uma chave apenas da folha
 void excluirChave(NoBPlus** raiz, int chave) {
     NoBPlus* no = *raiz;
 
     // Busca a folha que contém a chave
-    while (!no->folha) {
-        if (chave < no->chave1 || no->chave1 == -1)
+    while (no != NULL && !no->folha) {
+        if (chave < no->chave1 || no->chave1 == -1) {
             no = no->ptr1;
-        else if (no->chave2 == -1 || chave < no->chave2)
+        } else if (no->chave2 == -1 || chave < no->chave2) {
             no = no->ptr2;
-        else
+        } else {
             no = no->ptr3;
+        }
     }
 
-    // Remove a chave do nó folha
-    if (no->chave1 == chave) {
-        no->chave1 = no->chave2;
-        no->chave2 = -1;
-
-        // Se a chave removida era a mínima do nó, atualiza os nós internos
-        if (no->pai != NULL) {
-            int novoValor = encontrarMenor(no->pai->ptr2); // Menor valor do próximo filho
-            atualizarChaves(no->pai, chave, novoValor);
-        }
-    } else if (no->chave2 == chave) {
-        no->chave2 = -1;
-    } else {
+    // Verifica se o nó folha foi encontrado
+    if (no == NULL) {
         printf("Chave %d não encontrada na árvore.\n", chave);
         return;
     }
 
-    // Se o nó ainda tem uma chave, não precisa ajustar
-    if (no->chave1 != -1)
+    // Remove a chave encontrada na folha
+    if (no->chave1 == chave) {
+        no->chave1 = no->chave2; // Move chave2 para chave1
+        no->chave2 = -1;         // Apaga chave2
+    } else if (no->chave2 == chave) {
+        no->chave2 = -1;         // Apaga chave2
+    } else {
+        printf("Chave %d não encontrada na folha.\n", chave);
         return;
+    }
 
-    // Ajusta a árvore se necessário
-    concatenarRedistribuir(raiz, no);
+    // Se o nó folha estiver vazio, remove-o
+    if (no->chave1 == -1 && no->chave2 == -1) {
+        if (no->pai == NULL) { // Caso seja o único nó da árvore
+            *raiz = NULL;
+        } else {
+            NoBPlus* pai = no->pai;
+
+            // Determina o índice do nó no pai
+            if (pai->ptr1 == no) {
+                pai->ptr1 = NULL;
+            } else if (pai->ptr2 == no) {
+                pai->ptr2 = NULL;
+            } else if (pai->ptr3 == no) {
+                pai->ptr3 = NULL;
+            }
+
+            // Atualiza as chaves do pai
+            atualizarChaves(pai);
+
+            // Se o pai ficar vazio, ajusta recursivamente
+            if (pai->chave1 == -1 && pai->ptr1 == NULL && pai->ptr2 == NULL && pai->ptr3 == NULL) {
+                concatenarRedistribuir(raiz, pai);
+            }
+        }
+        free(no);
+        printf("Nó folha vazio removido.\n");
+    } else {
+        printf("Chave %d removida da folha.\n", chave);
+    }
 }
 
 // Função para concatenar ou redistribuir nós após a exclusão de uma chave
+
+// Função para concatenar ou redistribuir nós
+// Função para concatenar ou redistribuir nós após a exclusão de uma chave
 void concatenarRedistribuir(NoBPlus** raiz, NoBPlus* no) {
-    if (no == NULL || no->pai == NULL) return;
-
     NoBPlus* pai = no->pai;
-    NoBPlus* irmaoEsquerdo = NULL;
-    NoBPlus* irmaoDireito = NULL;
-
-    // Identificar os irmãos do nó
-    if (pai->ptr1 == no) {
-        irmaoDireito = pai->ptr2;
-    } else if (pai->ptr2 == no) {
-        irmaoEsquerdo = pai->ptr1;
-        irmaoDireito = pai->ptr3;
-    } else if (pai->ptr3 == no) {
-        irmaoEsquerdo = pai->ptr2;
-    }
-
-    // Caso 1: Redistribuição do irmão esquerdo
-    if (irmaoEsquerdo && irmaoEsquerdo->chave2 != -1) {
-        no->chave1 = pai->chave1;
-        pai->chave1 = irmaoEsquerdo->chave2;
-        irmaoEsquerdo->chave2 = -1;
-        return;
-    }
-
-    // Caso 2: Redistribuição do irmão direito
-    if (irmaoDireito && irmaoDireito->chave2 != -1) {
-        no->chave1 = pai->chave1;
-        pai->chave1 = irmaoDireito->chave1;
-        irmaoDireito->chave1 = irmaoDireito->chave2;
-        irmaoDireito->chave2 = -1;
-        return;
-    }
-
-    // Caso 3: Combinação de nós (mesclagem)
-    if (irmaoEsquerdo) {
-        irmaoEsquerdo->chave2 = pai->chave1;
-        pai->chave1 = pai->chave2;
-        pai->chave2 = -1;
-        pai->ptr2 = pai->ptr3;
-        pai->ptr3 = NULL;
+    if (pai == NULL) {
+        *raiz = NULL;
         free(no);
-        // Se o nó pai agora estiver vazio, continuar com a reestruturação
-        if (pai->chave1 == -1) {
-            concatenarRedistribuir(raiz, pai);
-        }
-    } else if (irmaoDireito) {
-        no->chave1 = pai->chave1;
-        no->chave2 = irmaoDireito->chave1;
-        pai->chave1 = pai->chave2;
-        pai->chave2 = -1;
-        pai->ptr2 = pai->ptr3;
-        pai->ptr3 = NULL;
-        free(irmaoDireito);
-        // Se o nó pai agora estiver vazio, continuar com a reestruturação
-        if (pai->chave1 == -1) {
-            concatenarRedistribuir(raiz, pai);
+        return;
+    }
+
+    int indice = indiceFilho(pai, no);
+    NoBPlus* irmao = NULL;
+
+    // Tenta obter o irmão esquerdo
+    if (indice > 0) {
+        irmao = (indice == 1) ? pai->ptr1 : pai->ptr2;
+    }
+
+    // Tenta obter o irmão direito se necessário
+    if (irmao == NULL || (irmao->chave2 == -1)) {
+        if (indice < 2 && ((indice == 0 && pai->ptr2 != NULL) || (indice == 1 && pai->ptr3 != NULL))) {
+            irmao = (indice == 0) ? pai->ptr2 : pai->ptr3;
         }
     }
 
-    // Se o nó pai for a raiz e ficar vazio, atualize a raiz
-    if (pai->chave1 == -1 && pai == *raiz) {
-        *raiz = pai->ptr1 ? pai->ptr1 : pai->ptr2;
-        if (*raiz) {
-            (*raiz)->pai = NULL;
+    // Redistribuir
+    if (irmao != NULL && irmao->chave2 != -1) {
+        if (indice < indiceFilho(pai, irmao)) {
+            no->chave1 = irmao->chave1;
+            irmao->chave1 = irmao->chave2;
+            irmao->chave2 = -1;
+        } else {
+            no->chave1 = irmao->chave2;
+            irmao->chave2 = -1;
         }
-        free(pai);
+        atualizarChaves(pai);
+    } else {
+        // Concatena o nó atual com o irmão
+        if (irmao != NULL) {
+            if (indice < indiceFilho(pai, irmao)) {
+                irmao->chave2 = irmao->chave1;
+                irmao->chave1 = no->chave1;
+            } else {
+                irmao->chave2 = no->chave1;
+            }
+            if (indice == 0) {
+                pai->ptr1 = irmao;
+                pai->ptr2 = pai->ptr3;
+                pai->ptr3 = NULL;
+            } else if (indice == 1) {
+                pai->ptr2 = pai->ptr3;
+                pai->ptr3 = NULL;
+            }
+            atualizarChaves(pai);
+            free(no);
+        }
+
+        // Se o pai ficou vazio
+        if (pai->chave1 == -1) {
+            concatenarRedistribuir(raiz, pai);
+        }
     }
 }
+
 
 // Função para imprimir a árvore completa
 void imprimirArvore(NoBPlus* no, int nivel) {
@@ -427,7 +463,7 @@ int main() {
     printf("\n\n");
 
     // Buscar uma chave
-    int chaveBusca = 15;
+    int chaveBusca = 30;
     NoBPlus* resultado = buscarChave(raiz, chaveBusca);
     if (resultado != NULL)
         printf("Chave %d encontrada no nó %p\n", chaveBusca, (void*)resultado);
@@ -435,12 +471,11 @@ int main() {
         printf("Chave %d não encontrada na árvore\n", chaveBusca);
 
     // Excluir uma chave
+    excluirChave(&raiz, 30);
     excluirChave(&raiz, 20);
+    excluirChave(&raiz, 5);
     printf("Árvore B+ após exclusão da chave 10:\n");
     imprimirArvore(raiz, 0);
-    
-
-    
 
     // Liberar a árvore
     liberarArvore(raiz);
