@@ -375,50 +375,21 @@ int main() {
 
     // Inserir algumas chaves na árvore
     inserirChave(&raiz, 10);
-    imprimirArvore(raiz, 0);
-    printf("\n\n");
     inserirChave(&raiz, 20);
-    imprimirArvore(raiz, 0);
-    printf("\n\n");
     inserirChave(&raiz, 5);
-    imprimirArvore(raiz, 0);
-    printf("\n\n");
     inserirChave(&raiz, 15);
-    imprimirArvore(raiz, 0);
-    printf("\n\n");
     inserirChave(&raiz, 25);
-    imprimirArvore(raiz, 0);
-    printf("\n\n");
     inserirChave(&raiz, 30);
+    inserirChave(&raiz, 50);
+    inserirChave(&raiz, 23);
+    inserirChave(&raiz, 70);
+    inserirChave(&raiz, 90);
 
+    
     //Imprimir a árvore
     printf("Árvore B+ após inserções:\n");
     imprimirArvore(raiz, 0);
     printf("\n\n");
-
-    // inserirChave(&raiz, 50);
-    // imprimirArvore(raiz, 0);
-    
-    // printf("\n\n");
-
-    // inserirChave(&raiz, 60);
-    // imprimirArvore(raiz, 0);
-    
-    // printf("\n\n");
-
-    // inserirChave(&raiz, 23);
-    // imprimirArvore(raiz, 0);
-    
-    // printf("\n\n");
-
-    // inserirChave(&raiz, 43);
-    // imprimirArvore(raiz, 0);
-    
-    // printf("\n\n");
-
-    // inserirChave(&raiz, 70);
-    // imprimirArvore(raiz, 0);
-
 
     // Buscar uma chave
     int chaveBusca = 15;
