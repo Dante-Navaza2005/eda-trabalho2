@@ -336,9 +336,6 @@ void excluirChave(NoBPlus** raiz, int chave) {
                 pai->ptr3 = NULL;
             }
 
-            // Atualiza as chaves do pai
-            atualizarChaves(pai);
-
             // Se o pai ficar vazio, ajusta recursivamente
             if (pai->chave1 == -1 && pai->ptr1 == NULL && pai->ptr2 == NULL && pai->ptr3 == NULL) {
                 concatenarRedistribuir(raiz, pai);
@@ -475,8 +472,6 @@ int main() {
         printf("Chave %d não encontrada na árvore\n", chaveBusca);
 
     // Excluir uma chave
-    excluirChave(&raiz, 15);
-    excluirChave(&raiz, 30);
     excluirChave(&raiz, 20);
     printf("Árvore B+ após exclusão da chave 10:\n");
     imprimirArvore(raiz, 0);
