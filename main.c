@@ -1,3 +1,7 @@
+// Dante Honorato Navaza 2321406 
+// Rafael Soares 2320470
+// Guilherme Cunha
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -471,9 +475,9 @@ int main() {
         printf("Chave %d não encontrada na árvore\n", chaveBusca);
 
     // Excluir uma chave
+    excluirChave(&raiz, 15);
     excluirChave(&raiz, 30);
     excluirChave(&raiz, 20);
-    excluirChave(&raiz, 5);
     printf("Árvore B+ após exclusão da chave 10:\n");
     imprimirArvore(raiz, 0);
 
