@@ -440,7 +440,7 @@ int main() {
         printf("Chave %d não encontrada na árvore\n", chaveBusca);
 
     excluir_chave(&raiz, 20);
-    printf("Árvore B+ após exclusão da chave 10:\n");
+    printf("Árvore B+ após exclusão da chave 20:\n");
     imprimir_arvore(raiz, 0);
 
     return 0;
